@@ -46,7 +46,7 @@
     const KEY='autopay-car-tracker-v1';
     const today=new Date();
     const isoToday=new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);
-    const fresh=()=>({name:'i20 Active',price:275000,down:75000,emi:15000,start:isoToday,payments:[]});
+    const fresh=()=>({name:'i20 Active',price:275000,down:60000,emi:15000,start:'2026-08-10',payments:[{date:'2026-08-10',amount:10000},{date:'2026-11-02',amount:15000}]});
     let state=fresh(),shared=false;
     const $=id=>document.getElementById(id);
     const safeParse=s=>{try{return JSON.parse(s)}catch{return null}};
@@ -55,7 +55,7 @@
       const hash=new URLSearchParams(location.hash.slice(1));
       const encoded=hash.get('data');
       if(encoded){try{const decoded=JSON.parse(decodeURIComponent(escape(atob(encoded))));if(valid(decoded)){state=decoded;shared=true;$('viewBanner').style.display='block';return}}catch{}}
-      const saved=safeParse(localStorage.getItem(KEY));if(valid(saved))state=saved;
+      const saved=safeParse(localStorage.getItem(KEY));if(valid(saved)){if(saved.name==='i20 Active'&&+saved.price===275000&&+saved.down===75000&&+saved.emi===15000&&saved.payments.length===0){state=fresh();localStorage.setItem(KEY,JSON.stringify(state))}else state=saved}
     };
     const persist=()=>{localStorage.setItem(KEY,JSON.stringify(state));$('saveStatus').textContent='Saved on this device'};
     const money=n=>'₹'+Math.max(0,Math.round(n||0)).toLocaleString('en-IN');
