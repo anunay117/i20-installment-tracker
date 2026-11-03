@@ -5,13 +5,13 @@ A small, dependency-free payment tracker for the i20 Active sale.
 ## Current plan
 
 - Agreed sale price: ₹2,75,000
-- Down payment received: ₹60,000
+- Down payment received: ₹70,000 on 10 Aug 2026
 - Monthly installment: ₹15,000
-- Balance after down payment: ₹2,15,000
-- Payments recorded: ₹10,000 on 10 Aug 2026 and ₹15,000 on 2 Nov 2026
-- Current balance: ₹1,90,000 (13 installments left: 12 of ₹15,000 and a final ₹10,000 installment)
+- Balance after down payment: ₹2,05,000
+- Payments recorded: ₹15,000 on 3 Sep 2026 and ₹15,000 on 2 Nov 2026
+- Current balance: ₹1,75,000 (12 installments left: 11 of ₹15,000 and a final ₹10,000 installment)
 
-The first installment date is set to 10 Aug 2026 and can be changed in **Edit plan**. Use **Record payment** when an installment arrives. You can undo an entry from the payment history.
+The down payment date and first installment date are both shown in the tracker. They can be changed in **Edit plan**. Use **Record payment** when an installment arrives. You can undo an entry from the payment history.
 
 ## Run locally
 
