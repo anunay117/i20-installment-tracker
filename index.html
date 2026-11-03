@@ -12,6 +12,8 @@
     @media(max-width:760px){.shell{padding:18px 15px 36px}.topbar{margin-bottom:25px}.sync-label{display:none}.heading{align-items:start}.heading h1{font-size:27px}.heading .button{padding:9px 10px}.grid,.lower{grid-template-columns:1fr}.overview{grid-column:auto;padding:19px}.lower{grid-column:auto}.section-card{padding:18px}.stats{margin-top:18px}.stat{padding-left:10px}.stat strong{font-size:14px}.progress-head{margin-top:22px}.top-right{gap:6px}.overview-top{gap:12px}}
     .stats{grid-template-columns:repeat(4,1fr)}
     @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr);row-gap:12px}.stat:nth-child(odd){padding-left:0;border-left:0}.stat:nth-child(n+3){padding-top:10px;border-top:1px solid var(--line)}}
+    .stats{grid-template-columns:repeat(4,1fr)}
+    @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr);row-gap:12px}.stat:nth-child(odd){padding-left:0;border-left:0}.stat:nth-child(n+3){padding-top:10px;border-top:1px solid var(--line)}}
   </style>
 </head>
 <body>
@@ -26,7 +28,7 @@
       <section class="card overview">
         <div class="overview-top"><div style="display:flex;gap:13px;align-items:center"><div class="car-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m3 13 1.5-4.4A2.6 2.6 0 0 1 7 7h10a2.6 2.6 0 0 1 2.5 1.6L21 13v5h-2v-2H5v2H3z"/><path d="M4 13h16m-12-3h8"/><circle cx="7" cy="15" r="1"/><circle cx="17" cy="15" r="1"/></svg></div><div><div class="car-name" id="carLabel">Car sale</div><div class="car-meta" id="planMeta">Installment plan · Started —</div></div></div><div class="main-number"><strong id="outstanding">₹0</strong><span>remaining to pay</span></div></div>
         <div class="progress-head"><b id="progressLabel">0 of 0 installments paid</b><span id="progressPercent">0%</span></div><div class="track"><div class="fill" id="progressFill"></div></div><div class="progress-foot"><span id="paidCaption">₹0 paid so far</span><span id="totalCaption">₹0 total after down payment</span></div>
-        <div class="stats"><div class="stat"><label>Agreed car price</label><strong id="priceValue">₹2,75,000</strong></div><div class="stat"><label>Monthly installment</label><strong id="emiValue">₹15,000</strong></div><div class="stat"><label>Installments left</label><strong id="remainingCount">0</strong></div><div class="stat"><label>Down payment</label><strong id="downValue">₹60,000</strong><em>received</em></div></div>
+        <div class="stats"><div class="stat"><label>Agreed car price</label><strong id="priceValue">₹2,75,000</strong></div><div class="stat"><label>Monthly installment</label><strong id="emiValue">₹15,000</strong></div><div class="stat"><label>Installments left</label><strong id="remainingCount">0</strong></div><div class="stat"><label>Down payment</label><strong id="downValue">₹70,000</strong><em id="downDateValue">received 10 Aug 2026</em></div></div>
       </section>
       <div class="lower">
         <section class="card section-card"><div class="section-head"><div><div class="section-title">Payment history</div><div class="section-hint" id="historyHint">Payments recorded so far</div></div><button class="button soft" id="settingsBtn">Edit plan</button></div><div class="payment-list" id="paymentList"></div></section>
@@ -40,6 +42,7 @@
     <div class="field"><label for="priceInput">Agreed sale price (₹)</label><input id="priceInput" type="number" min="0" step="1" required /></div>
     <div class="field"><label for="downInput">Down payment received (₹)</label><input id="downInput" type="number" min="0" step="1" required /></div>
     <div class="field"><label for="emiInput">Monthly installment (₹)</label><input id="emiInput" type="number" min="1" step="1" required /></div>
+    <div class="field"><label for="downDateInput">Down payment date</label><input id="downDateInput" type="date" required /></div>
     <div class="field"><label for="startInput">First installment date</label><input id="startInput" type="date" required /></div>
     <div class="field full"><span class="helper">The plan and payment history stay in this browser. Share a snapshot link for someone else to view the current figures.</span></div>
   </div><div class="modal-actions"><button type="button" class="button" id="cancelBtn">Cancel</button><button type="submit" class="button primary">Save plan</button></div></form></section></div>
@@ -48,7 +51,7 @@
     const KEY='autopay-car-tracker-v1';
     const today=new Date();
     const isoToday=new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);
-    const fresh=()=>({name:'i20 Active',price:275000,down:60000,emi:15000,start:'2026-08-10',payments:[{date:'2026-08-10',amount:10000},{date:'2026-11-02',amount:15000}]});
+    const fresh=()=>({name:'i20 Active',price:275000,down:70000,downDate:'2026-08-10',emi:15000,start:'2026-09-03',payments:[{date:'2026-09-03',amount:15000},{date:'2026-11-02',amount:15000}]});
     let state=fresh(),shared=false;
     const $=id=>document.getElementById(id);
     const safeParse=s=>{try{return JSON.parse(s)}catch{return null}};
@@ -57,7 +60,7 @@
       const hash=new URLSearchParams(location.hash.slice(1));
       const encoded=hash.get('data');
       if(encoded){try{const decoded=JSON.parse(decodeURIComponent(escape(atob(encoded))));if(valid(decoded)){state=decoded;shared=true;$('viewBanner').style.display='block';return}}catch{}}
-      const saved=safeParse(localStorage.getItem(KEY));if(valid(saved)){if(saved.name==='i20 Active'&&+saved.price===275000&&+saved.down===75000&&+saved.emi===15000&&saved.payments.length===0){state=fresh();localStorage.setItem(KEY,JSON.stringify(state))}else state=saved}
+      const saved=safeParse(localStorage.getItem(KEY));if(valid(saved)){const oldTwoPayments=saved.payments.length===2&&saved.payments[0]?.date==='2026-08-10'&&+saved.payments[0]?.amount===10000&&saved.payments[1]?.date==='2026-11-02'&&+saved.payments[1]?.amount===15000;const oldEmptyPlan=saved.name==='i20 Active'&&+saved.price===275000&&[60000,75000].includes(+saved.down)&&+saved.emi===15000&&saved.payments.length===0;if(oldTwoPayments||oldEmptyPlan){state=fresh();localStorage.setItem(KEY,JSON.stringify(state))}else state=saved}
     };
     const persist=()=>{localStorage.setItem(KEY,JSON.stringify(state));$('saveStatus').textContent='Saved on this device'};
     const money=n=>'₹'+Math.max(0,Math.round(n||0)).toLocaleString('en-IN');
@@ -67,7 +70,7 @@
     function render(){
       const principal=Math.max(0,+state.price-(+state.down||0)),emi=Math.max(1,+state.emi||15000),count=Math.ceil(principal/emi),paid=state.payments.length,paidAmt=paidAmount(),remaining=Math.max(0,principal-paidAmt),pct=principal?Math.min(100,paidAmt/principal*100):0;
       $('carLabel').textContent=state.name||'Car sale';$('planMeta').textContent=`${count} monthly installment${count===1?'':'s'} · Started ${dateFmt(state.start,{month:'short',year:'numeric'})}`;
-      $('outstanding').textContent=money(remaining);$('progressLabel').textContent=`${Math.min(paid,count)} of ${count} installments paid`;$('progressPercent').textContent=`${Math.round(pct)}%`;$('progressFill').style.width=`${pct}%`;$('paidCaption').textContent=`${money(paidAmt)} paid so far`;$('totalCaption').textContent=`${money(principal)} after down payment`;$('priceValue').textContent=money(state.price);$('emiValue').textContent=money(emi);$('remainingCount').textContent=Math.max(0,count-paid);$('downValue').textContent=money(state.down);$('historyHint').textContent=`${paid} payment${paid===1?'':'s'} recorded`;
+      $('outstanding').textContent=money(remaining);$('progressLabel').textContent=`${Math.min(paid,count)} of ${count} installments paid`;$('progressPercent').textContent=`${Math.round(pct)}%`;$('progressFill').style.width=`${pct}%`;$('paidCaption').textContent=`${money(paidAmt)} paid so far`;$('totalCaption').textContent=`${money(principal)} after down payment`;$('priceValue').textContent=money(state.price);$('emiValue').textContent=money(emi);$('remainingCount').textContent=Math.max(0,count-paid);$('downValue').textContent=money(state.down);$('downDateValue').textContent=`received ${dateFmt(state.downDate||state.start)}`;$('historyHint').textContent=`${paid} payment${paid===1?'':'s'} recorded`;
       const hist=$('paymentList');hist.replaceChildren();
       if(!state.payments.length){hist.innerHTML='<div class="empty">No monthly payments recorded yet.<br>Record the first installment when it arrives.</div>'}else{
         [...state.payments].map((p,i)=>({...p,index:i})).reverse().forEach(p=>{const row=document.createElement('div');row.className='payment-row';row.innerHTML=`<div class="check">✓</div><div><div class="payment-name">Installment ${p.index+1}</div><div class="payment-date">Received ${dateFmt(p.date)}</div></div><div class="payment-amount">${money(p.amount)}<br><button class="helper undo" data-index="${p.index}" style="border:0;background:none;padding:3px 0;color:#a7463d;cursor:pointer">Undo</button></div>`;hist.append(row)});
@@ -78,9 +81,9 @@
       if(!next){sched.innerHTML='<div class="empty">All installments are paid. 🎉</div>'}else if(next>shown){const more=document.createElement('div');more.className='helper';more.style.padding='10px 0';more.textContent=`+ ${next-shown} more installment${next-shown===1?'':'s'} after these`;sched.append(more)}
       $('scheduleNote').textContent=principal===0?'The down payment covers the full sale price.':`Down payment of ${money(state.down)} is counted separately. Final installment may be smaller than ${money(emi)}.`;
     }
-    function openModal(){ $('carNameInput').value=state.name||'';$('priceInput').value=state.price||'';$('downInput').value=state.down||75000;$('emiInput').value=state.emi||15000;$('startInput').value=state.start||isoToday;$('modalBackdrop').classList.add('open') }
+    function openModal(){ $('carNameInput').value=state.name||'';$('priceInput').value=state.price||'';$('downInput').value=state.down||70000;$('downDateInput').value=state.downDate||state.start||isoToday;$('emiInput').value=state.emi||15000;$('startInput').value=state.start||isoToday;$('modalBackdrop').classList.add('open') }
     function closeModal(){$('modalBackdrop').classList.remove('open')}
-    $('planForm').addEventListener('submit',e=>{e.preventDefault();const newPrice=+$('priceInput').value,newDown=+$('downInput').value;if(newPrice<newDown){alert('Sale price must be at least the down payment.');return}state={...state,name:$('carNameInput').value.trim()||'Car sale',price:newPrice,down:newDown,emi:+$('emiInput').value,start:$('startInput').value};shared=false;$('viewBanner').style.display='none';history.replaceState(null,'',location.pathname+location.search);persist();render();closeModal()});
+    $('planForm').addEventListener('submit',e=>{e.preventDefault();const newPrice=+$('priceInput').value,newDown=+$('downInput').value;if(newPrice<newDown){alert('Sale price must be at least the down payment.');return}state={...state,name:$('carNameInput').value.trim()||'Car sale',price:newPrice,down:newDown,downDate:$('downDateInput').value,emi:+$('emiInput').value,start:$('startInput').value};shared=false;$('viewBanner').style.display='none';history.replaceState(null,'',location.pathname+location.search);persist();render();closeModal()});
     $('settingsBtn').addEventListener('click',openModal);$('cancelBtn').addEventListener('click',closeModal);$('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))closeModal()});
     $('recordBtn').addEventListener('click',()=>{const bal=Math.max(0,+state.price-(+state.down||0)-paidAmount());if(!state.price){openModal();return}if(bal<=0){toast('The plan is fully paid.');return}const amount=Math.min(+state.emi,bal);state.payments.push({date:isoToday,amount});persist();render();toast(`${money(amount)} payment recorded.`)});
     $('shareBtn').addEventListener('click',async()=>{const bytes=new TextEncoder().encode(JSON.stringify(state));let binary='';bytes.forEach(b=>binary+=String.fromCharCode(b));const data=btoa(binary);const url=location.origin+location.pathname+location.search+'#data='+encodeURIComponent(data);try{await navigator.clipboard.writeText(url);toast('Snapshot link copied. Send it to your friend.')}catch{prompt('Copy this snapshot link:',url)}});
