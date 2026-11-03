@@ -180,7 +180,7 @@ async function claimInvite(request, env) {
   const changed = await env.DB.prepare("UPDATE invites SET used_at = ? WHERE token_hash = ? AND used_at IS NULL")
     .bind(nowIso(), tokenHash).run();
   if (!changed.meta?.changes) return json({ error: "This invite link has already been used." }, 409);
-  const displayName = String(body.displayName || "Friend").trim().slice(0, 50) || "Friend";
+  const displayName = "Miti";
   const token = randomToken();
   const id = crypto.randomUUID();
   const createdAt = nowIso();
