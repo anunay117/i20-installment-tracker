@@ -19,7 +19,7 @@
       <div class="top-right"><span class="sync-label"><i class="dot"></i><span id="saveStatus">Saved on this device</span></span><button class="button" id="shareBtn">↗ Share snapshot</button></div>
     </header>
     <div class="view-banner" id="viewBanner">You’re viewing a shared snapshot. Changes you make here stay in this browser.</div>
-    <div class="heading"><div><div class="eyebrow">Private payment tracker</div><h1>Car installment plan</h1><p class="subtitle">A clear record of payments, from down payment to final installment.</p></div><button class="button primary" id="recordBtn">＋ Record payment</button></div>
+    <div class="heading"><div><div class="eyebrow">Shared payment tracker</div><h1>Car installment plan</h1><p class="subtitle">A clear record of payments, from down payment to final installment.</p></div><button class="button primary" id="recordBtn">＋ Record payment</button></div>
     <main class="grid">
       <section class="card overview">
         <div class="overview-top"><div style="display:flex;gap:13px;align-items:center"><div class="car-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m3 13 1.5-4.4A2.6 2.6 0 0 1 7 7h10a2.6 2.6 0 0 1 2.5 1.6L21 13v5h-2v-2H5v2H3z"/><path d="M4 13h16m-12-3h8"/><circle cx="7" cy="15" r="1"/><circle cx="17" cy="15" r="1"/></svg></div><div><div class="car-name" id="carLabel">Car sale</div><div class="car-meta" id="planMeta">Installment plan · Started —</div></div></div><div class="main-number"><strong id="outstanding">₹0</strong><span>remaining to pay</span></div></div>
@@ -28,7 +28,7 @@
       </section>
       <div class="lower">
         <section class="card section-card"><div class="section-head"><div><div class="section-title">Payment history</div><div class="section-hint" id="historyHint">Payments recorded so far</div></div><button class="button soft" id="settingsBtn">Edit plan</button></div><div class="payment-list" id="paymentList"></div></section>
-        <section class="card section-card"><div class="section-head"><div><div class="section-title">Upcoming installments</div><div class="section-hint">Your remaining schedule</div></div></div><div class="schedule-scroll"><div class="schedule" id="schedule"></div></div><div class="note" id="scheduleNote">Your final installment may be smaller if the remaining balance is below one full monthly installment.</div></section>
+        <section class="card section-card"><div class="section-head"><div><div class="section-title">Remaining schedule</div><div class="section-hint">Installment due dates</div></div></div><div class="schedule-scroll"><div class="schedule" id="schedule"></div></div><div class="note" id="scheduleNote">Your final installment may be smaller if the remaining balance is below one full monthly installment.</div></section>
       </div>
     </main>
   </div>
