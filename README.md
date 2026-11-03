@@ -1,4 +1,4 @@
-# AutoPay — i20 Active payment approval tracker
+# CarEMI — i20 Active payment approval tracker
 
 Installable shared tracker for the i20 Active. Friends submit an EMI amount with a receipt screenshot. Anunay reviews it; only approved payments reduce the balance. The Cloudflare D1 database keeps the plan, payment submissions, receipts, push subscriptions, and append-only audit events.
 

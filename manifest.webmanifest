@@ -1,7 +1,7 @@
 {
   "id": "/i20-installment-tracker/",
-  "name": "AutoPay — i20 Active",
-  "short_name": "AutoPay",
+  "name": "CarEMI — i20 Active",
+  "short_name": "CarEMI",
   "description": "Shared car installment tracker",
   "start_url": "/i20-installment-tracker/",
   "scope": "/i20-installment-tracker/",

@@ -1,4 +1,4 @@
-const CACHE_NAME = "autopay-shell-v3";
+const CACHE_NAME = "caremi-shell-v4";
 const BASE = "/i20-installment-tracker/";
 const SHELL = [BASE, `${BASE}manifest.webmanifest`, `${BASE}assets/icon.svg`];
 
@@ -28,9 +28,9 @@ self.addEventListener("fetch", event => {
 
 self.addEventListener("push", event => {
   let data = {};
-  try { data = event.data ? event.data.json() : {}; } catch { data = { body: event.data?.text() || "Open AutoPay for an update." }; }
-  event.waitUntil(self.registration.showNotification(data.title || "AutoPay update", {
-    body: data.body || "Open AutoPay to review the latest update.",
+  try { data = event.data ? event.data.json() : {}; } catch { data = { body: event.data?.text() || "Open CarEMI for an update." }; }
+  event.waitUntil(self.registration.showNotification(data.title || "CarEMI update", {
+    body: data.body || "Open CarEMI to review the latest update.",
     icon: `${BASE}assets/icon.svg`,
     badge: `${BASE}assets/icon.svg`,
     tag: data.tag || "autopay-update",

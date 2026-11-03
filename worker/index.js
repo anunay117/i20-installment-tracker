@@ -264,7 +264,7 @@ async function submitPayment(request, env, actor, ctx) {
   await audit(env, actor, "payment_submitted", "payment", id, { amount, paidAt, receiptMime: match[1] });
   ctx.waitUntil(notifyRole(env, "owner", {
     title: "EMI payment needs review",
-    body: `${actor.display_name} submitted a payment. Open AutoPay to review it.`,
+    body: `${actor.display_name} submitted a payment. Open CarEMI to review it.`,
     tag: `emi-pending-${id}`
   }));
   return json({ id, status: "pending", amount, paidAt, submittedAt: createdAt }, 201);
@@ -301,7 +301,7 @@ async function paymentAction(request, env, actor, paymentId, action, ctx) {
   await audit(env, actor, "payment_rejected", "payment", paymentId, { amount: payment.amount, note });
   ctx.waitUntil(notifyRole(env, "friend", {
     title: "EMI submission needs an update",
-    body: "Anunay left a note. Open AutoPay to review it.",
+    body: "Anunay left a note. Open CarEMI to review it.",
     tag: `emi-rejected-${paymentId}`
   }));
   return json({ id: paymentId, status: "rejected" });
