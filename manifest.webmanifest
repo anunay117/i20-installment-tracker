@@ -1,0 +1,14 @@
+{
+  "id": "/i20-installment-tracker/",
+  "name": "AutoPay — i20 Active",
+  "short_name": "AutoPay",
+  "description": "Shared car installment tracker",
+  "start_url": "/i20-installment-tracker/",
+  "scope": "/i20-installment-tracker/",
+  "display": "standalone",
+  "background_color": "#f7f7f2",
+  "theme_color": "#1f664d",
+  "icons": [
+    { "src": "/i20-installment-tracker/assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

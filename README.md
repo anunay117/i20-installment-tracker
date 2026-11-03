@@ -1,26 +1,56 @@
-# AutoPay — i20 Active installment tracker
+# AutoPay — i20 Active payment approval tracker
 
-A small, dependency-free payment tracker for the i20 Active sale.
+Installable shared tracker for the i20 Active. Friends submit an EMI amount with a receipt screenshot. Anunay reviews it; only approved payments reduce the balance. The Cloudflare D1 database keeps the plan, payment submissions, receipts, push subscriptions, and append-only audit events.
 
-## Current plan
+## Current plan seeded in D1
 
-- Agreed sale price: ₹2,75,000
-- Down payment received: ₹70,000 on 10 Aug 2026
+- Agreed car price: ₹2,75,000
+- Down payment: ₹70,000 on 10 Aug 2026
 - Monthly installment: ₹15,000
-- Balance after down payment: ₹2,05,000
-- Payments recorded: ₹15,000 on 3 Sep 2026 and ₹15,000 on 2 Nov 2026
-- Current balance: ₹1,75,000 (12 installments left: 11 of ₹15,000 and a final ₹10,000 installment)
+- Approved EMIs: ₹15,000 on 3 Sep 2026 and ₹15,000 on 2 Nov 2026
+- Balance: ₹1,75,000, with 12 installments left
 
-The down payment date and first installment date are both shown in the tracker. They can be changed in **Edit plan**. Use **Record payment** when an installment arrives. You can undo an entry from the payment history.
+## Cloudflare setup
 
-## Run locally
+1. Install Wrangler and sign in to the Cloudflare account:
 
-Open `index.html` in a browser. The plan and payment history are saved in that browser's local storage.
+   ```sh
+   npx wrangler login
+   ```
 
-## Sharing
+2. Create the separate D1 database and copy its ID into `wrangler.jsonc`:
 
-Use **Share snapshot** to copy a link containing the current plan and payment history. Anyone with that link can view that snapshot. Later edits do not change links already sent; share a new snapshot link after recording more payments. This static site does not sync edits between browsers.
+   ```sh
+   npx wrangler d1 create i20-installments
+   ```
 
-## Publish with GitHub Pages
+3. Apply the schema and existing approved payment history:
 
-Create a GitHub repository, push these files to its `main` branch, then enable **Settings → Pages → Deploy from a branch → main / (root)**. The site will be available at `https://<your-user>.github.io/<repository>/`.
+   ```sh
+   npx wrangler d1 migrations apply i20-installments --remote
+   ```
+
+4. Add the private secrets `BOOTSTRAP_TOKEN` and `VAPID_PRIVATE_JWK` with `wrangler secret put`. Put the matching `VAPID_PUBLIC_KEY` in `wrangler.jsonc`.
+
+5. Deploy the API Worker and copy its `workers.dev` URL into the `API_BASE` constant in `index.html`:
+
+   ```sh
+   npx wrangler deploy
+   ```
+
+6. Push the project to GitHub Pages. The Worker accepts requests from `https://anunay117.github.io` and stores data in D1.
+
+## Access and notifications
+
+- Anunay uses the private owner access code stored as the `BOOTSTRAP_TOKEN` Worker secret. It can recover owner access on a new device.
+- From the owner view, choose **Invite friend**. The one-time invite expires after seven days; the friend accepts it and chooses a display name.
+- Both phones must open the site, install it to the Home Screen, and tap **Enable notifications**. Push delivery requires the browser's notification permission.
+- Each new payment stores a resized screenshot (up to 1.2 MB), amount, payment date, submitter, and status. Pending payments reserve available balance but do not count as paid.
+- The app does not offer a delete action. Payment details are immutable after submission; decisions and plan changes are written to append-only audit events. Cloudflare account owners can still change database resources directly.
+
+## Local files
+
+- `index.html` — PWA UI and authenticated client
+- `sw.js` and `manifest.webmanifest` — installation, offline shell, and push display
+- `worker/index.js` — Cloudflare Worker API and Web Push sender
+- `migrations/0001_initial.sql` — D1 schema and existing payment history
