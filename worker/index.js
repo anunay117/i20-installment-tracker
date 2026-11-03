@@ -133,7 +133,7 @@ async function loginWithAccessCode(request, env) {
   else if (role === "owner") valid = constantTimeEqual(code, env.BOOTSTRAP_TOKEN);
   if (!valid) return json({ error: "That access code is incorrect or not set up." }, 403);
 
-  const displayName = role === "owner" ? "Anunay" : (String(body.displayName || "Friend").trim().slice(0, 50) || "Friend");
+  const displayName = role === "owner" ? "Anunay" : "Miti";
   const token = randomToken(), id = crypto.randomUUID(), createdAt = nowIso();
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400000).toISOString();
   await env.DB.batch([
