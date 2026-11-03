@@ -45,6 +45,14 @@ async function hash(value) {
   return base64url(new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(value))));
 }
 
+async function accessCodeHash(value, role, env) {
+  if (!env.ACCESS_CODE_PEPPER) throw new Error("Code protection is not configured.");
+  const key = await crypto.subtle.importKey("raw", encoder.encode(env.ACCESS_CODE_PEPPER),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(`autopay:${role}:${value.trim()}`));
+  return base64url(new Uint8Array(signature));
+}
+
 function constantTimeEqual(a, b) {
   if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
   let diff = 0;
@@ -89,6 +97,9 @@ async function setup(request, env) {
   const body = await readJson(request);
   if (!constantTimeEqual(body.bootstrapToken, env.BOOTSTRAP_TOKEN)) return json({ error: "Setup code is incorrect." }, 403);
   const used = await env.DB.prepare("SELECT completed_at FROM app_setup WHERE id = 1").first();
+  if (await env.DB.prepare("SELECT role FROM access_codes WHERE role = 'owner'").first()) {
+    return json({ error: "A custom owner code is set. Sign in with that code; bootstrap recovery is disabled." }, 403);
+  }
   const displayName = String(body.displayName || "Anunay").trim().slice(0, 50) || "Anunay";
   const token = randomToken();
   const id = crypto.randomUUID();
@@ -107,6 +118,55 @@ async function setup(request, env) {
   );
   await env.DB.batch(statements);
   return json({ token, role: "owner", displayName, expiresAt });
+}
+
+async function loginWithAccessCode(request, env) {
+  const body = await readJson(request);
+  const role = String(body.role || "");
+  const code = String(body.code || "").trim();
+  if (!['owner', 'friend'].includes(role) || code.length < 8 || code.length > 128) {
+    return json({ error: "Enter a valid access code." }, 400);
+  }
+  const configured = await env.DB.prepare("SELECT code_hash FROM access_codes WHERE role = ?").bind(role).first();
+  let valid = false;
+  if (configured) valid = constantTimeEqual(configured.code_hash, await accessCodeHash(code, role, env));
+  else if (role === "owner") valid = constantTimeEqual(code, env.BOOTSTRAP_TOKEN);
+  if (!valid) return json({ error: "That access code is incorrect or not set up." }, 403);
+
+  const displayName = role === "owner" ? "Anunay" : (String(body.displayName || "Friend").trim().slice(0, 50) || "Friend");
+  const token = randomToken(), id = crypto.randomUUID(), createdAt = nowIso();
+  const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400000).toISOString();
+  await env.DB.batch([
+    env.DB.prepare("INSERT INTO sessions (id, token_hash, role, display_name, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)")
+      .bind(id, await hash(token), role, displayName, createdAt, expiresAt),
+    env.DB.prepare(`INSERT INTO audit_events
+      (id, actor_session, actor_name, actor_role, action, entity_type, entity_id, details, occurred_at)
+      VALUES (?, ?, ?, ?, 'access_code_login', 'session', ?, '{}', ?)`)
+      .bind(crypto.randomUUID(), id, displayName, role, id, createdAt)
+  ]);
+  return json({ token, role, displayName, expiresAt });
+}
+
+async function setAccessCodes(request, env, actor) {
+  if (actor.role !== "owner") return json({ error: "Only Anunay can set access codes." }, 403);
+  const body = await readJson(request);
+  const ownerCode = String(body.ownerCode || "").trim();
+  const friendCode = String(body.friendCode || "").trim();
+  if (ownerCode.length < 8 || ownerCode.length > 128 || friendCode.length < 8 || friendCode.length > 128) {
+    return json({ error: "Each code must be between 8 and 128 characters." }, 400);
+  }
+  if (ownerCode === friendCode) return json({ error: "Choose different codes for owner and friend." }, 400);
+  const updatedAt = nowIso();
+  const ownerHash = await accessCodeHash(ownerCode, "owner", env);
+  const friendHash = await accessCodeHash(friendCode, "friend", env);
+  await env.DB.batch([
+    env.DB.prepare(`INSERT INTO access_codes (role, code_hash, updated_at) VALUES ('owner', ?, ?)
+      ON CONFLICT(role) DO UPDATE SET code_hash = excluded.code_hash, updated_at = excluded.updated_at`).bind(ownerHash, updatedAt),
+    env.DB.prepare(`INSERT INTO access_codes (role, code_hash, updated_at) VALUES ('friend', ?, ?)
+      ON CONFLICT(role) DO UPDATE SET code_hash = excluded.code_hash, updated_at = excluded.updated_at`).bind(friendHash, updatedAt)
+  ]);
+  await audit(env, actor, "access_codes_updated", "access_codes", "owner-and-friend", { ownerConfigured: true, friendConfigured: true });
+  return json({ ok: true, ownerConfigured: true, friendConfigured: true });
 }
 
 async function claimInvite(request, env) {
@@ -343,10 +403,12 @@ async function route(request, env, ctx) {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (request.method === "GET" && path === "push-key") return json({ publicKey: env.VAPID_PUBLIC_KEY || null });
   if (request.method === "POST" && path === "setup") return setup(request, env);
+  if (request.method === "POST" && path === "login") return loginWithAccessCode(request, env);
   if (request.method === "POST" && path === "claim-invite") return claimInvite(request, env);
 
   const actor = await requireActor(request, env);
   if (request.method === "GET" && path === "status") return status(request, env);
+  if (request.method === "POST" && path === "access-codes") return setAccessCodes(request, env, actor);
   if (request.method === "POST" && path === "invites") {
     if (actor.role !== "owner") return json({ error: "Only Anunay can create friend invites." }, 403);
     return createInvite(request, env, actor);

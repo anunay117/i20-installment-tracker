@@ -30,7 +30,7 @@ Installable shared tracker for the i20 Active. Friends submit an EMI amount with
    npx wrangler d1 migrations apply i20-installments --remote
    ```
 
-4. Add the private secrets `BOOTSTRAP_TOKEN` and `VAPID_PRIVATE_JWK` with `wrangler secret put`. Put the matching `VAPID_PUBLIC_KEY` in `wrangler.jsonc`.
+4. Add the private secrets `BOOTSTRAP_TOKEN`, `ACCESS_CODE_PEPPER`, and `VAPID_PRIVATE_JWK` with `wrangler secret put`. Put the matching `VAPID_PUBLIC_KEY` in `wrangler.jsonc`.
 
 5. Deploy the API Worker and copy its `workers.dev` URL into the `API_BASE` constant in `index.html`:
 
@@ -42,8 +42,9 @@ Installable shared tracker for the i20 Active. Friends submit an EMI amount with
 
 ## Access and notifications
 
-- Anunay uses the private owner access code stored as the `BOOTSTRAP_TOKEN` Worker secret. It can recover owner access on a new device.
-- From the owner view, choose **Invite friend**. The one-time invite expires after seven days; the friend accepts it and chooses a display name.
+- The owner signs in with the initial `BOOTSTRAP_TOKEN`, then chooses **Access codes** to set both custom codes. After that, bootstrap recovery is disabled.
+- Custom owner and friend codes are reusable and do not expire. They are stored as HMAC-protected hashes in D1; the Worker secret `ACCESS_CODE_PEPPER` protects those hashes. Keep the codes private. Anyone with the friend code can sign in as the friend.
+- Login sessions expire after 120 days; the same permanent access code can be used to sign in again.
 - Both phones must open the site, install it to the Home Screen, and tap **Enable notifications**. Push delivery requires the browser's notification permission.
 - Each new payment stores a resized screenshot (up to 1.2 MB), amount, payment date, submitter, and status. Pending payments reserve available balance but do not count as paid.
 - The app does not offer a delete action. Payment details are immutable after submission; decisions and plan changes are written to append-only audit events. Cloudflare account owners can still change database resources directly.
@@ -53,4 +54,4 @@ Installable shared tracker for the i20 Active. Friends submit an EMI amount with
 - `index.html` — PWA UI and authenticated client
 - `sw.js` and `manifest.webmanifest` — installation, offline shell, and push display
 - `worker/index.js` — Cloudflare Worker API and Web Push sender
-- `migrations/0001_initial.sql` — D1 schema and existing payment history
+- `migrations/0001_initial.sql` and `0002_custom_access_codes.sql` — D1 schema, existing payment history, and permanent code hashes
